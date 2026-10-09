@@ -2,8 +2,17 @@ $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
 $output = Join-Path $root "_site"
-$url = [Environment]::GetEnvironmentVariable("SUPABASE_URL")
-$key = [Environment]::GetEnvironmentVariable("SUPABASE_PUBLISHABLE_KEY")
+$url = [Environment]::GetEnvironmentVariable("VITE_SUPABASE_URL")
+if ([string]::IsNullOrWhiteSpace($url)) {
+  $url = [Environment]::GetEnvironmentVariable("SUPABASE_URL")
+}
+$key = [Environment]::GetEnvironmentVariable("VITE_SUPABASE_PUBLISHABLE_KEY")
+if ([string]::IsNullOrWhiteSpace($key)) {
+  $key = [Environment]::GetEnvironmentVariable("SUPABASE_PUBLISHABLE_KEY")
+}
+if ([string]::IsNullOrWhiteSpace($key)) {
+  $key = [Environment]::GetEnvironmentVariable("SUPABASE_KEY")
+}
 if ($null -eq $url) { $url = "" }
 if ($null -eq $key) { $key = "" }
 $url = $url.Trim().TrimEnd("/")
