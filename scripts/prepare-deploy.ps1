@@ -2,16 +2,30 @@ $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
 $output = Join-Path $root "_site"
-$url = [Environment]::GetEnvironmentVariable("VITE_SUPABASE_URL")
-if ([string]::IsNullOrWhiteSpace($url)) {
-  $url = [Environment]::GetEnvironmentVariable("SUPABASE_URL")
+$sourceConfig = [IO.File]::ReadAllText((Join-Path $root "supabase-config.js"))
+$sourceUrl = [regex]::Match($sourceConfig, '(?m)^\s*url:\s*(?<value>"(?:\\.|[^"\\])*")\s*,?\s*$')
+$sourceKey = [regex]::Match($sourceConfig, '(?m)^\s*publishableKey:\s*(?<value>"(?:\\.|[^"\\])*")\s*,?\s*$')
+if (-not $sourceUrl.Success -or -not $sourceKey.Success) {
+  throw "supabase-config.js must define url and publishableKey string values."
 }
-$key = [Environment]::GetEnvironmentVariable("VITE_SUPABASE_PUBLISHABLE_KEY")
-if ([string]::IsNullOrWhiteSpace($key)) {
-  $key = [Environment]::GetEnvironmentVariable("SUPABASE_PUBLISHABLE_KEY")
+$url = ConvertFrom-Json -InputObject $sourceUrl.Groups["value"].Value
+$key = ConvertFrom-Json -InputObject $sourceKey.Groups["value"].Value
+$environmentUrl = [Environment]::GetEnvironmentVariable("SUPABASE_URL")
+if ([string]::IsNullOrWhiteSpace($environmentUrl)) {
+  $environmentUrl = [Environment]::GetEnvironmentVariable("VITE_SUPABASE_URL")
 }
-if ([string]::IsNullOrWhiteSpace($key)) {
-  $key = [Environment]::GetEnvironmentVariable("SUPABASE_KEY")
+if (-not [string]::IsNullOrWhiteSpace($environmentUrl)) {
+  $url = $environmentUrl
+}
+$environmentKey = [Environment]::GetEnvironmentVariable("SUPABASE_PUBLISHABLE_KEY")
+if ([string]::IsNullOrWhiteSpace($environmentKey)) {
+  $environmentKey = [Environment]::GetEnvironmentVariable("VITE_SUPABASE_PUBLISHABLE_KEY")
+}
+if ([string]::IsNullOrWhiteSpace($environmentKey)) {
+  $environmentKey = [Environment]::GetEnvironmentVariable("SUPABASE_KEY")
+}
+if (-not [string]::IsNullOrWhiteSpace($environmentKey)) {
+  $key = $environmentKey
 }
 if ($null -eq $url) { $url = "" }
 if ($null -eq $key) { $key = "" }
