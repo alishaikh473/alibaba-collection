@@ -1,0 +1,5 @@
+_site/
+.env
+.env.*
+!.env.example
+supabase/.temp/
