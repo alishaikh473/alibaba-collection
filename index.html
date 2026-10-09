@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f7f4">
+  <meta name="description" content="Discover beautiful images, useful digital resources and thoughtful stories from independent creators.">
+  <title>Alibaba Collection — Good work, gathered.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#discover" aria-label="Alibaba Collection home"><span class="brand-mark">a<span>.</span></span><span>alibaba<span class="brand-light">collection</span></span></a>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a class="nav-link active" href="#discover" data-view="discover">Discover</a>
+      <a class="nav-link" href="#images" data-category="Images">Images</a>
+      <a class="nav-link" href="#documents" data-category="Documents">Documents</a>
+      <a class="nav-link" href="#write-story-page" data-view="write-story">Stories</a>
+      <a class="nav-link" href="#creators" data-view="creators">Creators</a>
+    </nav>
+    <div class="top-actions">
+      <button class="icon-button theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode"><span>◐</span></button>
+      <button class="button button-quiet sign-in">My corner</button>
+      <button class="button button-dark open-upload"><span class="plus">＋</span> Start selling</button>
+      <button class="mobile-menu icon-button" aria-label="Open menu">☰</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="storefront-view">
+    <section class="hero" id="discover">
+      <div class="hero-content">
+        <div class="eyebrow"><span class="eyebrow-dot"></span> A marketplace for good ideas</div>
+        <h1>Good work,<br><span class="serif">gathered.</span></h1>
+        <p class="hero-copy">Discover beautiful images, useful resources and thoughtful stories — made and shared by independent creators.</p>
+        <form class="search-form" role="search">
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input id="search-input" type="search" placeholder="Try “editorial photography” or “brand kit”" aria-label="Search the marketplace">
+          <select id="search-type" aria-label="Search category">
+            <option value="All">Everything</option><option value="Images">Images</option><option value="Documents">Documents</option><option value="Articles">Stories</option>
+          </select>
+          <button class="search-submit" type="submit" aria-label="Search">→</button>
+        </form>
+        <div class="popular-searches"><span>Popular:</span><button data-query="architecture">architecture</button><i>·</i><button data-query="minimal">minimal</button><i>·</i><button data-query="branding">branding</button></div>
+      </div>
+      <div class="hero-art" aria-label="Curated photography from the collection">
+        <div class="hero-photo hero-photo-main"></div><div class="hero-photo hero-photo-small"></div>
+        <div class="hero-note"><span class="note-star">✳</span><span>Made with<br>intention.</span></div>
+        <div class="photo-caption"><span>01 / 04</span><span>Quiet mornings — by Noor A.</span></div>
+      </div>
+      <div class="hero-bottom"><span>Independent by nature. Inspiring by design.</span><span>SCROLL TO EXPLORE&nbsp; ↓</span></div>
+    </section>
+
+    <section class="browse-strip" aria-label="Browse categories">
+      <span class="strip-label">A LITTLE OF EVERYTHING</span>
+      <button class="category-pill selected" data-filter="All">All work <span>↗</span></button>
+      <button class="category-pill" data-filter="Photography">Photography <span>↗</span></button>
+      <button class="category-pill" data-filter="Design">Design assets <span>↗</span></button>
+      <button class="category-pill" data-filter="Documents">Documents <span>↗</span></button>
+      <button class="category-pill" data-filter="Stories">Stories <span>↗</span></button>
+    </section>
+
+    <section class="section collection-section" id="collection">
+      <div class="section-heading">
+        <div><div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> THE COLLECTION</div><h2 id="collection-heading">Made to be <span class="serif">found.</span></h2><p class="section-description">A fresh selection of things worth keeping.</p></div>
+        <div class="section-tools"><button class="text-button" id="favorites-toggle">♡ <span>Saved</span></button><select id="sort-select" aria-label="Sort collection"><option value="featured">Featured</option><option value="newest">Newest</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option></select></div>
+      </div>
+      <div class="filter-tabs" role="tablist" aria-label="Collection type">
+        <button class="filter-tab is-active" data-filter="All">Everything <span class="tab-count">11</span></button>
+        <button class="filter-tab" data-filter="Images">Images</button><button class="filter-tab" data-filter="Documents">Documents</button><button class="filter-tab" data-filter="Articles">Stories</button>
+      </div>
+      <div class="product-grid" id="product-grid" aria-live="polite"></div>
+      <div class="empty-state hidden" id="empty-state"><div class="empty-icon">⌕</div><h3>Nothing in this corner just yet.</h3><p>Try another search or explore a different category.</p><button class="button button-outline" id="clear-filters">See everything</button></div>
+      <div class="load-more-wrap"><button class="button button-outline load-more" id="load-more">Explore the collection <span>↗</span></button></div>
+    </section>
+
+    <section class="creator-banner" id="creators">
+      <div class="creator-copy"><div class="eyebrow light-eyebrow"><span class="eyebrow-dot"></span> YOUR WORK BELONGS HERE</div><h2>Make good things.<br><span class="serif">Make them yours.</span></h2><p>Share the work you love and find your people. Upload an image, a helpful resource or your next great story.</p><button class="button button-cream open-upload">Bring your work in <span>↗</span></button></div>
+      <div class="creator-visual"><div class="creator-image"></div><div class="creator-caption">A community of makers<br>from everywhere.</div><div class="creator-circle">CREATE<br> &nbsp; &amp;<br> CONNECT</div></div>
+    </section>
+
+    <section class="section stories-section" id="stories">
+      <div class="section-heading"><div><div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> FROM THE JOURNAL</div><h2>Ideas worth <span class="serif">passing on.</span></h2><p class="section-description">Notes, know-how and new perspectives from the community.</p></div><div class="story-actions"><button class="text-button" id="write-story">Write a story <span>＋</span></button><button class="text-button" id="view-stories">All stories <span>↗</span></button></div></div>
+      <div class="story-grid" id="story-grid"></div>
+    </section>
+    </div>
+    <section class="article-writing-page hidden" id="write-story-page" aria-labelledby="article-page-title">
+      <div class="article-page-heading">
+        <a class="text-button" href="#stories">← Back to the collection</a>
+        <div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> YOUR STORY, YOUR WORDS</div>
+        <h1 id="article-page-title">Write a little <span class="serif">something.</span></h1>
+        <p class="section-description">Take your time. Your story will appear in the community journal when you publish it.</p>
+      </div>
+      <form id="article-form" class="article-editor-form">
+        <label>Story title<input name="title" required maxlength="110" placeholder="What have you been thinking about?"></label>
+        <label class="article-category-field">Category <span class="optional-label">Optional · Add multiple topics if helpful</span><input name="category" type="text" maxlength="120" placeholder="Wildlife, Desert Exploration, Nature &amp; Inspiration" aria-describedby="story-category-help"><small id="story-category-help">Up to 120 characters. Scroll within the field to review longer categories.</small></label>
+        <label class="article-cover-field">Cover image <span class="optional-label">Optional · JPG, PNG, WebP, or GIF · Up to 15 MB</span><input id="story-cover-input" name="cover" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><img id="story-cover-preview" class="story-cover-preview hidden" alt="Selected story cover preview"></label>
+        <label class="article-body-field">Your story<textarea name="body" required minlength="30" maxlength="50000" rows="18" placeholder="Start anywhere. You can always polish it later."></textarea><small>Long-form text is supported. Use blank lines to start a new paragraph.</small></label>
+        <div id="article-error" class="form-error hidden" role="alert"></div>
+        <div class="article-editor-actions"><button class="button button-dark" type="submit">Publish story <span>↗</span></button></div>
+      </form>
+    </section>
+  </main>
+  <footer class="footer"><a class="brand footer-brand" href="#"><span class="brand-mark">a<span>.</span></span><span>alibaba<span class="brand-light">collection</span></span></a><span>A more thoughtful place to find your next favorite thing.</span><span>© 2026 Alibaba Collection</span></footer>
+
+  <dialog id="upload-dialog" class="modal">
+    <form method="dialog" class="modal-close-form"><button class="modal-close" aria-label="Close">×</button></form>
+    <div class="modal-content">
+      <div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> SHARE YOUR WORK</div><h2>Bring something <span class="serif">good.</span></h2>
+      <p class="modal-intro">Add a file to your collection on this device. You can preview it and find it in your collection right away.</p>
+      <label class="upload-drop" id="upload-drop" for="file-input"><span class="upload-symbol">↑</span><strong>Drop a file here, or browse</strong><span>Images, PDFs, and documents · Up to 15 MB</span><input id="file-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,image/tiff,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.epub,.zip,.tif,.tiff"></label>
+      <div id="upload-progress" class="upload-progress hidden"><span></span></div>
+      <form id="product-form" class="upload-fields hidden">
+        <label>Title<input name="title" required maxlength="90" placeholder="Give your work a name"></label>
+        <label>What are you sharing?<select name="type"><option value="Images">Image</option><option value="Documents">Document</option></select></label>
+        <label>Category<input name="category" required maxlength="40" placeholder="e.g. Photography, Business"></label>
+        <label>Price in USD<input name="price" type="number" min="0" max="10000" step="0.01" value="0" required><small>Set to 0 to share for free.</small></label>
+        <label class="rights-check"><input type="checkbox" name="rights" required><span>I own this work or have permission to share it.</span></label>
+        <div class="form-actions"><button type="button" class="button button-quiet cancel-upload">Cancel</button><button class="button button-dark" type="submit">Add to my collection <span>↗</span></button></div>
+      </form>
+      <div id="upload-error" class="form-error hidden" role="alert"></div>
+    </div>
+  </dialog>
+
+  <dialog id="detail-dialog" class="modal detail-modal"><form method="dialog" class="modal-close-form"><button class="modal-close" aria-label="Close">×</button></form><div id="detail-content" class="detail-content"></div></dialog>
+  <dialog id="account-dialog" class="modal account-modal"><form method="dialog" class="modal-close-form"><button class="modal-close" aria-label="Close">×</button></form><div class="modal-content"><div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> YOUR COLLECTION</div><h2>Your little <span class="serif">corner.</span></h2><p class="modal-intro">Saved things and uploads on this device live here. Sign-in and syncing will be available once an account service is connected.</p><div id="account-content"></div></div></dialog>
+  <div class="toast-region" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
