@@ -17,75 +17,284 @@
   const $ = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => [...root.querySelectorAll(s)];
   const safeRead = (key, fallback) => { try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; } };
-  const state = { products: [...seedProducts, ...safeRead("ac-products", [])], stories: [...seedStories, ...safeRead("ac-stories", [])], favorites: safeRead("ac-favorites", []), filter:"All", query:"", onlyFavorites:false, selectedFile:null, selectedFileUrl:"", storyCoverUrl:"" };
-  const productGrid = $("#product-grid"), storyGrid = $("#story-grid"), emptyState = $("#empty-state");
+  function readStoredList(key, validate) {
+    const value = safeRead(key, []);
+    if (!Array.isArray(value)) {
+      console.warn(`Ignoring invalid saved ${key} data.`);
+      return [];
+    }
+    const valid = value.filter(validate);
+    if (valid.length !== value.length) console.warn(`Ignoring invalid entries in saved ${key} data.`);
+    return valid;
+  }
+  const isLocalOrigin = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  const localConfig = window.ALIBABA_SUPABASE_LOCAL_CONFIG;
+  const localConfigReady = Boolean(isLocalOrigin && localConfig && localConfig.url === "http://127.0.0.1:54321" && typeof localConfig.publishableKey === "string" && localConfig.publishableKey.length > 20 && !localConfig.publishableKey.includes("YOUR_"));
+  const supabaseConfig = localConfigReady ? localConfig : window.ALIBABA_SUPABASE_CONFIG;
+  const supabaseApiKey = supabaseConfig && (supabaseConfig.publishableKey || supabaseConfig.anonKey);
+  function isSafeImageUrl(value) {
+    if (typeof value !== "string" || !value) return false;
+    if (value.startsWith("blob:")) return true;
+    try {
+      const url = new URL(value, location.href);
+      const supabaseOrigin = supabaseConfig && typeof supabaseConfig.url === "string" ? new URL(supabaseConfig.url).origin : "";
+      const publicStorageImage = supabaseOrigin && url.origin === supabaseOrigin && url.pathname.startsWith("/storage/v1/object/public/marketplace-files/");
+      return (url.protocol === "https:" && (url.hostname === "images.unsplash.com" || publicStorageImage)) || (localConfigReady && url.protocol === "http:" && publicStorageImage);
+    } catch { return false; }
+  }
+  const brandMarkup = '<span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 44 44" focusable="false"><rect x="1" y="1" width="42" height="42" rx="12" fill="#3d5d4e"/><rect x="5" y="5" width="34" height="34" rx="9" fill="none" stroke="#d8c397" stroke-opacity=".55"/><path d="M12 31 21.9 11.5 32 31M15.5 24.5h13" fill="none" stroke="#f8f5ec" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.1"/><path d="m32.5 8 .9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9z" fill="#d8c397"/><path d="M16.5 34h11" stroke="#d8c397" stroke-linecap="round" stroke-width="1.4"/></svg></span><span class="brand-name" aria-hidden="true"><span class="brand-primary">Alibaba</span><span class="brand-secondary">COLLECTION</span></span>';
+  $$("[data-brand-logo]").forEach(brand => { brand.innerHTML = brandMarkup; });
+  const state = { products: [...seedProducts], stories: [...seedStories], favorites: readStoredList("ac-favorites", item => typeof item === "string" && item.length <= 120), query:"", favoritesView:"", selectedFile:null, selectedFileUrl:"", storyCoverUrl:"", adminSession:null };
+  const imageGrid = $("#image-grid"), documentGrid = $("#document-grid"), storyGrid = $("#story-grid");
   const money = amount => Number(amount) === 0 ? "Free" : `$${Number(amount).toFixed(2)}`;
   const escapeHtml = text => String(text).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  function setBackendStatus(message = "") {
+    const status = $("#backend-status");
+    status.textContent = message;
+    status.classList.toggle("hidden", !message);
+  }
   function toast(message, error = false) {
     const node = document.createElement("div"); node.className = `toast${error ? " error" : ""}`; node.textContent = message;
     $(".toast-region").append(node); setTimeout(() => node.remove(), 3200);
   }
   function save(key, data) { try { localStorage.setItem(key, JSON.stringify(data)); return true; } catch { toast("Your browser storage is full. Remove some uploads and try again.", true); return false; } }
+  const storageBucket = "marketplace-files";
+  const supabaseReady = Boolean(supabaseConfig && typeof supabaseConfig.url === "string" && (/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(supabaseConfig.url) || (localConfigReady && supabaseConfig.url === localConfig.url)) && typeof supabaseApiKey === "string" && supabaseApiKey.length > 20 && !supabaseApiKey.includes("YOUR_"));
+  const secureAdminOrigin = location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  function isAdmin() { return Boolean(state.adminSession); }
+  function requireAdmin() {
+    if (isAdmin()) return true;
+    toast("Admin access is required for that action.", true);
+    return false;
+  }
+  function updateAdminControls() {
+    const authorized = isAdmin();
+    $$(".open-upload, #write-story").forEach(control => control.classList.toggle("hidden", !authorized));
+    $(".admin-login").classList.toggle("hidden", authorized);
+    $(".admin-change").classList.toggle("hidden", !authorized);
+    $(".admin-logout").classList.toggle("hidden", !authorized);
+  }
+  function requireSupabase() {
+    if (!supabaseReady) throw new Error("Supabase is not configured. Follow README.md to add your project URL and publishable key.");
+  }
+  async function supabaseRequest(path, options = {}) {
+    requireSupabase();
+    const headers = new Headers(options.headers || {});
+    headers.set("apikey", supabaseApiKey);
+    if (options.token) headers.set("Authorization", `Bearer ${options.token}`);
+    if (options.body !== undefined && !(options.body instanceof Blob)) headers.set("Content-Type", "application/json");
+    const response = await fetch(`${supabaseConfig.url.replace(/\/$/, "")}${path}`, {method:options.method || "GET", headers, body:options.body instanceof Blob ? options.body : options.body === undefined ? undefined : JSON.stringify(options.body)});
+    const responseText = await response.text();
+    let payload = null;
+    try { payload = responseText ? JSON.parse(responseText) : null; } catch { payload = responseText; }
+    if (!response.ok) {
+      const detail = payload && typeof payload === "object" ? payload.msg || payload.message || payload.error_description || payload.error : "";
+      throw new Error(detail || `Supabase request failed (${response.status}).`);
+    }
+    return payload;
+  }
+  async function verifyAdminSession(session) {
+    return Boolean(await supabaseRequest("/rest/v1/rpc/is_admin", {method:"POST", token:session.access_token, body:{}}));
+  }
+  async function currentAdminToken() {
+    requireAdmin();
+    const session = state.adminSession;
+    if (session.expires_at * 1000 > Date.now() + 30000) return session.access_token;
+    try {
+      const refreshed = await supabaseRequest("/auth/v1/token?grant_type=refresh_token", {method:"POST", body:{refresh_token:session.refresh_token}});
+      state.adminSession = {...refreshed, expires_at:Date.now() / 1000 + refreshed.expires_in};
+      return state.adminSession.access_token;
+    } catch (error) {
+      state.adminSession = null;
+      updateAdminControls();
+      throw new Error(`Your admin session expired. Sign in again. ${error.message}`);
+    }
+  }
+  async function uploadObject(path, file) {
+    const token = await currentAdminToken();
+    await supabaseRequest(`/storage/v1/object/${storageBucket}/${path.split("/").map(encodeURIComponent).join("/")}`, {
+      method:"POST", token, headers:{"Content-Type":file.type || "application/octet-stream", "x-upsert":"false"}, body:file
+    });
+    return `${supabaseConfig.url.replace(/\/$/, "")}/storage/v1/object/public/${storageBucket}/${path.split("/").map(encodeURIComponent).join("/")}`;
+  }
+  async function deleteObject(path) {
+    const token = await currentAdminToken();
+    await supabaseRequest(`/storage/v1/object/${storageBucket}/${path.split("/").map(encodeURIComponent).join("/")}`, {method:"DELETE", token});
+  }
+  function productFromRow(row) {
+    return {id:row.id,title:row.title,creator:row.creator,type:row.type,category:row.category,price:Number(row.price),image:row.image_url || "",description:row.description,fileName:row.file_name,filePath:row.file_path,isAdminUpload:true,createdAt:row.created_at};
+  }
+  function storyFromRow(row) {
+    return {id:row.id,title:row.title,category:row.category,creator:row.creator,image:row.image_url || "",body:row.body,createdAt:row.created_at};
+  }
+  async function loadMarketplaceContent() {
+    if (!supabaseReady) {
+      setBackendStatus("Preview mode — showing sample content. Configure Supabase to enable shared publishing and admin sign-in.");
+      return;
+    }
+    try {
+      const [products, stories] = await Promise.all([
+        supabaseRequest("/rest/v1/products?select=id,title,creator,type,category,price,description,file_name,file_path,image_url,created_at&order=created_at.desc"),
+        supabaseRequest("/rest/v1/stories?select=id,title,creator,category,body,image_url,created_at&order=created_at.desc")
+      ]);
+      if (!Array.isArray(products) || !Array.isArray(stories)) throw new Error("Supabase returned an unexpected content response.");
+      state.products = [...seedProducts, ...products.map(productFromRow)];
+      state.stories = [...seedStories, ...stories.map(storyFromRow)];
+      renderProducts(); renderStories();
+      setBackendStatus("");
+    } catch (error) {
+      console.warn("Could not load shared marketplace content; keeping sample content available.", error);
+      setBackendStatus("Supabase is temporarily unavailable — showing sample content. Check your connection or Supabase project configuration.");
+    }
+  }
+  const adminDialog = $("#admin-dialog");
+  let adminDialogMode = "login";
+  function openAdminDialog(mode) {
+    const form = $("#admin-form");
+    adminDialogMode = mode;
+    const changing = mode === "change";
+    $("#admin-dialog-title").textContent = changing ? "Change admin password" : "Admin login";
+    $("#admin-dialog-copy").textContent = changing
+      ? "Verify your current password, then choose a new password with at least 12 characters."
+      : supabaseReady
+        ? "Sign in with the admin account authorized for this site."
+        : "Preview mode is active. Configure your Supabase project URL and publishable key to enable admin sign-in.";
+    $("#admin-email-field").classList.toggle("hidden", changing);
+    $("#admin-email").required = !changing;
+    $("#admin-current-field").classList.toggle("hidden", !changing);
+    $("#admin-password-label").textContent = changing ? "New password" : "Password";
+    $("#admin-confirm-field").classList.toggle("hidden", !changing);
+    form.elements.current.required = changing;
+    form.elements.confirm.required = changing;
+    $("#admin-password").autocomplete = changing ? "new-password" : "current-password";
+    $("#admin-submit").textContent = changing ? "Save new password" : "Log in";
+    $("#admin-error").classList.add("hidden");
+    form.reset();
+    adminDialog.showModal();
+  }
+  function openAdminLogin() {
+    if (supabaseReady && !secureAdminOrigin) { toast("Admin sign-in requires HTTPS (or localhost during development).", true); return; }
+    openAdminDialog("login");
+  }
+  $("#admin-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    const form = event.currentTarget, submit = $("#admin-submit"), error = $("#admin-error");
+    const password = form.elements.password.value;
+    submit.disabled = true;
+    error.classList.add("hidden");
+    try {
+      if (adminDialogMode === "change") {
+        if (!isAdmin()) throw new Error("Sign in as admin before changing the password.");
+        if (password.length < 12) throw new Error("Choose a new password with at least 12 characters.");
+        if (password !== form.elements.confirm.value) throw new Error("The new passwords do not match.");
+        const reauthenticated = await supabaseRequest("/auth/v1/token?grant_type=password", {
+          method:"POST", body:{email:state.adminSession.user.email,password:form.elements.current.value}
+        });
+        if (!await verifyAdminSession(reauthenticated)) throw new Error("This account is not authorized as an admin.");
+        await supabaseRequest("/auth/v1/user", {method:"PUT", token:reauthenticated.access_token, body:{password}});
+        state.adminSession = {...reauthenticated, expires_at:Date.now() / 1000 + reauthenticated.expires_in};
+        adminDialog.close();
+        form.reset();
+        toast("Your admin password has been updated by Supabase.");
+        return;
+      } else {
+        const session = await supabaseRequest("/auth/v1/token?grant_type=password", {
+          method:"POST", body:{email:form.elements.email.value.trim(),password}
+        });
+        if (!await verifyAdminSession(session)) {
+          try { await supabaseRequest("/auth/v1/logout", {method:"POST", token:session.access_token}); }
+          catch (logoutError) { console.warn("Could not revoke the non-admin Supabase session.", logoutError); }
+          throw new Error("This account is not on the site's admin allowlist.");
+        }
+        state.adminSession = {...session, expires_at:Date.now() / 1000 + session.expires_in};
+      }
+      updateAdminControls();
+      adminDialog.close();
+      form.reset();
+      toast("Signed in to the authorized admin account.");
+    } catch (cause) {
+      error.textContent = cause.message || "Could not sign in. Try again.";
+      error.classList.remove("hidden");
+    } finally {
+      submit.disabled = false;
+    }
+  });
+  $(".admin-login").addEventListener("click", openAdminLogin);
+  $(".admin-change").addEventListener("click", () => {
+    if (requireAdmin()) openAdminDialog("change");
+  });
+  $(".admin-logout").addEventListener("click", async () => {
+    const session = state.adminSession;
+    state.adminSession = null;
+    updateAdminControls();
+    if (adminDialog.open) adminDialog.close();
+    if ($("#upload-dialog").open) $("#upload-dialog").close();
+    if (location.hash === "#write-story-page") location.hash = "#stories";
+    try {
+      if (session) await supabaseRequest("/auth/v1/logout", {method:"POST", token:session.access_token});
+      toast("Admin session signed out.");
+    } catch (error) { toast(`Signed out locally, but Supabase could not revoke the session: ${error.message}`, true); }
+  });
+  function productMarkup(product) {
+    const image = isSafeImageUrl(product.image) ? product.image : "";
+    return `<article class="product-card" data-id="${escapeHtml(product.id)}" tabindex="0" role="button" aria-label="View ${escapeHtml(product.title)}"><div class="product-image-wrap">${image ? `<img class="product-image" src="${escapeHtml(image)}" alt="${escapeHtml(product.title)}" loading="lazy">` : `<div class="image-placeholder">${product.type === "Documents" ? "A little something to read" : "Made to be found"}</div>`}<span class="type-chip">${escapeHtml(product.category)}</span><button class="favorite-button ${state.favorites.includes(product.id) ? "is-favorite" : ""}" data-favorite="${escapeHtml(product.id)}" aria-label="${state.favorites.includes(product.id) ? "Remove from" : "Add to"} saved items">${state.favorites.includes(product.id) ? "♥" : "♡"}</button></div><div class="product-info"><div><h3 class="product-title">${escapeHtml(product.title)}</h3><p class="product-creator">By ${escapeHtml(product.creator)}</p><div class="product-category">${product.type === "Documents" ? "DIGITAL DOCUMENT" : "IMAGE"}</div></div><span class="product-price">${money(product.price)}</span></div></article>`;
+  }
   function renderProducts() {
-    $(".tab-count").textContent = state.products.length + state.stories.length;
     const term = state.query.trim().toLowerCase();
-    let products = [...state.products, ...state.stories.map(story => ({...story, type:"Articles", price:0, description:story.body}))].filter(p => (state.filter === "All" || p.type === state.filter || (state.filter === "Photography" && p.type === "Images") || (state.filter === "Design" && p.category.toLowerCase().includes("design")) || (state.filter === "Stories" && p.type === "Articles")) &&
-      (!term || `${p.title} ${p.creator} ${p.category} ${p.description || ""}`.toLowerCase().includes(term)) &&
-      (!state.onlyFavorites || state.favorites.includes(p.id)));
-    const sort = $("#sort-select").value;
-    if (sort === "newest") products = [...products].reverse();
-    if (sort === "price-low") products = [...products].sort((a,b) => Number(a.price)-Number(b.price));
-    if (sort === "price-high") products = [...products].sort((a,b) => Number(b.price)-Number(a.price));
-    $("#collection-heading").innerHTML = state.query ? `Results for <span class="serif">“${escapeHtml(state.query)}”</span>` : state.onlyFavorites ? `Your <span class="serif">saved things.</span>` : "Made to be <span class=\"serif\">found.</span>";
-    productGrid.innerHTML = products.map(product => `<article class="product-card" data-id="${escapeHtml(product.id)}" tabindex="0" role="button" aria-label="View ${escapeHtml(product.title)}"><div class="product-image-wrap">${product.image ? `<img class="product-image" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.title)}" loading="lazy">` : `<div class="image-placeholder">${product.type === "Documents" ? "A little something to read" : "Made to be found"}</div>`}<span class="type-chip">${escapeHtml(product.type === "Images" ? product.category : product.type === "Documents" ? "DIGITAL DOWNLOAD" : "STORY")}</span><button class="favorite-button ${state.favorites.includes(product.id) ? "is-favorite" : ""}" data-favorite="${escapeHtml(product.id)}" aria-label="${state.favorites.includes(product.id) ? "Remove from" : "Add to"} saved items">${state.favorites.includes(product.id) ? "♥" : "♡"}</button></div><div class="product-info"><div><h3 class="product-title">${escapeHtml(product.title)}</h3><p class="product-creator">By ${escapeHtml(product.creator)}</p><div class="product-category">${escapeHtml(product.category)}</div></div><span class="product-price">${money(product.price)}</span></div></article>`).join("");
-    emptyState.classList.toggle("hidden", products.length > 0); productGrid.classList.toggle("hidden", products.length === 0);
-  }
-  function renderStories() {
-    storyGrid.innerHTML = state.stories.slice(-3).reverse().map(story => `<article class="story-card" data-story="${escapeHtml(story.id)}" tabindex="0" role="button"><div class="story-image" style="background-image:url('${escapeHtml(story.image || "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=700&q=80")}')"></div><div class="story-content"><span class="story-category">${escapeHtml(story.category || "COMMUNITY NOTES")}</span><h3>${escapeHtml(story.title)}</h3><p>${escapeHtml(story.body.slice(0, 100))}${story.body.length > 100 ? "…" : ""}</p><div class="story-byline">A story by ${escapeHtml(story.creator || "You")}</div></div></article>`).join("");
-  }
-  function setFilter(filter) {
-    state.filter = filter; state.onlyFavorites = false;
-    $$(".filter-tab").forEach(tab => tab.classList.toggle("is-active", tab.dataset.filter === filter));
-    $$(".category-pill").forEach(tab => tab.classList.toggle("selected", tab.dataset.filter === filter));
-    $("#favorites-toggle").classList.remove("is-active"); renderProducts();
-  }
-  function initDB() {
-    return new Promise((resolve, reject) => {
-      if (!("indexedDB" in window)) { reject(new Error("This browser does not support local file storage.")); return; }
-      const request = indexedDB.open("AlibabaCollectionFiles", 1);
-      request.onupgradeneeded = () => request.result.createObjectStore("uploads", {keyPath:"id"});
-      request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
+    [
+      {type:"Images", key:"images", grid:imageGrid, empty:$("#images-empty"), sort:$("#images-page .sort-select")},
+      {type:"Documents", key:"documents", grid:documentGrid, empty:$("#documents-empty"), sort:$("#documents-page .sort-select")}
+    ].forEach(({type,key,grid,empty,sort}) => {
+      let products=state.products.filter(product=>product.type===type&&(!term||`${product.title} ${product.creator} ${product.category} ${product.description}`.toLowerCase().includes(term))&&(!state.favoritesView||state.favoritesView!==key||state.favorites.includes(product.id)));
+      if(sort.value==="newest")products=[...products].sort((a,b)=>Date.parse(b.createdAt||"1970-01-01")-Date.parse(a.createdAt||"1970-01-01"));
+      if(sort.value==="price-low")products=[...products].sort((a,b)=>Number(a.price)-Number(b.price));
+      if(sort.value==="price-high")products=[...products].sort((a,b)=>Number(b.price)-Number(a.price));
+      grid.innerHTML=products.map(productMarkup).join("");
+      empty.classList.toggle("hidden",products.length>0);
+      grid.classList.toggle("hidden",products.length===0);
     });
   }
-  async function putFile(id, file) {
-    const db = await initDB();
-    return new Promise((resolve, reject) => { const tx = db.transaction("uploads", "readwrite"); tx.objectStore("uploads").put({id, file}); tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); });
+  function renderStories() {
+    const term = state.query.trim().toLowerCase();
+    const stories = state.stories.filter(story => !term || `${story.title} ${story.creator} ${story.category} ${story.body}`.toLowerCase().includes(term));
+    storyGrid.innerHTML = [...stories].sort((a,b)=>Date.parse(b.createdAt||"1970-01-01")-Date.parse(a.createdAt||"1970-01-01")).map(story => {
+      const imageUrl = isSafeImageUrl(story.image) ? story.image : "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=700&q=80";
+      return `<article class="story-card" data-story="${escapeHtml(story.id)}" tabindex="0" role="button"><img class="story-image" src="${escapeHtml(imageUrl)}" alt="" loading="lazy"><div class="story-content"><span class="story-category">${escapeHtml(story.category || "COMMUNITY NOTES")}</span><h3>${escapeHtml(story.title)}</h3><p>${escapeHtml(story.body.slice(0, 100))}${story.body.length > 100 ? "…" : ""}</p><div class="story-byline">A story by ${escapeHtml(story.creator || "You")}</div></div></article>`;
+    }).join("");
   }
-  async function getFile(id) {
-    const db = await initDB();
-    return new Promise((resolve, reject) => { const tx = db.transaction("uploads", "readonly"), request = tx.objectStore("uploads").get(id); request.onsuccess = () => resolve(request.result && request.result.file); request.onerror = () => reject(request.error); });
-  }
-  async function removeFile(id) {
-    const db = await initDB();
-    return new Promise((resolve, reject) => { const tx = db.transaction("uploads", "readwrite"); tx.objectStore("uploads").delete(id); tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); });
+  const uploadMimeByExtension = {
+    jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",gif:"image/gif",tif:"image/tiff",tiff:"image/tiff",
+    pdf:"application/pdf",doc:"application/msword",docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ppt:"application/vnd.ms-powerpoint",pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    xls:"application/vnd.ms-excel",xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",epub:"application/epub+zip"
+  };
+  const allowedUploadMimeTypes = new Set(Object.values(uploadMimeByExtension));
+  function getUploadMimeType(file) {
+    const extension = file.name.split(".").pop().toLowerCase();
+    const inferred = uploadMimeByExtension[extension];
+    if (!inferred || (file.type && file.type !== inferred && file.type !== "application/octet-stream")) return "";
+    return inferred;
   }
   const uploadDialog = $("#upload-dialog");
   function openUpload() {
+    if (!requireAdmin()) return;
     const form = $("#product-form");
     form.reset(); form.classList.add("hidden");
     $("#upload-error").classList.add("hidden"); $("#upload-progress").classList.add("hidden");
+    $("#upload-progress").dataset.progress = "0";
     $("#file-input").value=""; state.selectedFile=null;
     if (state.selectedFileUrl) URL.revokeObjectURL(state.selectedFileUrl);
     state.selectedFileUrl=""; uploadDialog.showModal();
   }
   function chooseFile(file) {
     if (!file) return;
-    const allowed = /\.(jpe?g|png|webp|gif|svg|tiff?|pdf|docx?|pptx?|xlsx?|epub|zip)$/i.test(file.name);
-    if (!allowed) { $("#upload-error").textContent="That file type is not supported. Choose an image or a PDF or Office document."; $("#upload-error").classList.remove("hidden"); return; }
+    const mimeType = getUploadMimeType(file);
+    if (!mimeType || !allowedUploadMimeTypes.has(mimeType)) { $("#upload-error").textContent="That file type is not supported. Choose a JPG, PNG, WebP, GIF, TIFF, PDF, Office document, or EPUB file."; $("#upload-error").classList.remove("hidden"); return; }
     if (file.size > 15 * 1024 * 1024) { $("#upload-error").textContent="This file is larger than 15 MB. Choose a smaller file and try again."; $("#upload-error").classList.remove("hidden"); return; }
-    state.selectedFile = file; state.selectedFileUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : "";
+    state.selectedFile = new File([file], file.name, {type:mimeType});
+    state.selectedFileUrl = mimeType.startsWith("image/") ? URL.createObjectURL(state.selectedFile) : "";
     const form = $("#product-form"); form.classList.remove("hidden"); form.elements.title.value = file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g," ");
-    form.elements.type.value = file.type.startsWith("image/") ? "Images" : "Documents";
+    form.elements.type.value = mimeType.startsWith("image/") ? "Images" : "Documents";
     $("#upload-error").classList.add("hidden"); toast(`${file.name} is ready to add.`);
   }
   $("#file-input").addEventListener("change", event => chooseFile(event.target.files[0]));
@@ -96,69 +305,106 @@
   $$(".open-upload").forEach(button => button.addEventListener("click", openUpload));
   $$(".cancel-upload").forEach(button => button.addEventListener("click", () => uploadDialog.close()));
   $("#product-form").addEventListener("submit", async event => {
-    event.preventDefault(); if (!state.selectedFile) return;
-    const form = event.currentTarget, submit = form.querySelector('[type="submit"]'), progress = $("#upload-progress"), bar = $("span", progress);
-    submit.disabled = true; progress.classList.remove("hidden"); let width = 0;
-    const timer = setInterval(() => { width = Math.min(90, width + 18); bar.style.width = `${width}%`; }, 100);
-    const file = state.selectedFile, id = `upload-${Date.now()}`;
+    event.preventDefault(); if (!requireAdmin() || !state.selectedFile) return;
+    const form = event.currentTarget, submit = form.querySelector('[type="submit"]'), progress = $("#upload-progress");
+    submit.disabled = true; progress.classList.remove("hidden"); progress.dataset.progress = "0";
+    const file = state.selectedFile, id = crypto.randomUUID();
+    let uploadedPath = "";
     try {
-      await putFile(id, file); clearInterval(timer); bar.style.width="100%";
-      const fileDescription=`${file.name} · ${file.type || "Digital file"} · ${Math.max(1,Math.round(file.size/1024))} KB`;
-      const product={id,title:form.elements.title.value.trim(),creator:"You",type:form.elements.type.value,category:form.elements.category.value.trim(),price:Number(form.elements.price.value),image:state.selectedFileUrl,description:fileDescription,fileName:file.name};
-      const uploaded = safeRead("ac-products", []); uploaded.push(product);
-      if (!save("ac-products", uploaded)) return;
-      state.products.push(product); uploadDialog.close(); setFilter("All"); renderProducts(); toast("Your work is in the collection on this device.");
-    } catch (error) { clearInterval(timer); $("#upload-error").textContent=error.message || "Could not store this file. Check available browser storage and try again."; $("#upload-error").classList.remove("hidden"); }
+      if (form.elements.title.value.trim().length < 1 || form.elements.category.value.trim().length < 1) throw new Error("Add a title and category before publishing.");
+      if (!Number.isFinite(Number(form.elements.price.value)) || Number(form.elements.price.value) < 0 || Number(form.elements.price.value) > 10000) throw new Error("Enter a valid price between 0 and 10,000.");
+      const safeFileName = file.name.normalize("NFKC").replace(/[^a-zA-Z0-9._-]/g,"-").replace(/^\.+/,"").slice(0,100) || "upload";
+      const folder = `${state.adminSession.user.id}/${id}`;
+      uploadedPath = `${folder}/${safeFileName}`;
+      const publicUrl = await uploadObject(uploadedPath, file);
+      progress.dataset.progress = "75";
+      const row = await supabaseRequest("/rest/v1/products", {
+        method:"POST", token:await currentAdminToken(), headers:{Prefer:"return=representation"},
+        body:{id,title:form.elements.title.value.trim(),creator:"Alibaba Collection Admin",type:form.elements.type.value,category:form.elements.category.value.trim(),price:Number(form.elements.price.value),description:`${file.name} · ${file.type || "Digital file"} · ${Math.max(1,Math.round(file.size/1024))} KB`,file_name:file.name,file_path:uploadedPath,image_url:file.type.startsWith("image/")?publicUrl:null}
+      });
+      if (!Array.isArray(row) || row.length !== 1) throw new Error("Supabase did not confirm the uploaded listing.");
+      state.products.unshift(productFromRow(row[0])); progress.dataset.progress = "100";
+      uploadDialog.close(); renderProducts(); location.hash="#images"; toast("Your work is now published in the shared collection.");
+    } catch (error) {
+      if (uploadedPath) {
+        try { await deleteObject(uploadedPath); }
+        catch (cleanupError) { error.message = `${error.message} The uploaded file also needs cleanup: ${cleanupError.message}`; }
+      }
+      $("#upload-error").textContent=error.message || "Could not upload this file. Check your connection and try again.";
+      $("#upload-error").classList.remove("hidden");
+    }
     finally { submit.disabled=false; }
   });
-  productGrid.addEventListener("click", event => {
+  function handleProductClick(event) {
     const favorite = event.target.closest("[data-favorite]");
     if (favorite) { event.stopPropagation(); const id=favorite.dataset.favorite; state.favorites=state.favorites.includes(id)?state.favorites.filter(item=>item!==id):[...state.favorites,id]; save("ac-favorites",state.favorites); renderProducts(); toast(state.favorites.includes(id)?"Saved to your collection.":"Removed from saved items."); return; }
     const card=event.target.closest("[data-id]");
     if(card) {
-      if (state.stories.some(story => story.id === card.dataset.id)) showArticle(card.dataset.id);
-      else showProduct(card.dataset.id);
+      showProduct(card.dataset.id);
     }
+  }
+  [imageGrid,documentGrid].forEach(grid=>{
+    grid.addEventListener("click",handleProductClick);
+    grid.addEventListener("keydown",event=>{if((event.key==="Enter"||event.key===" ")&&event.target.matches(".product-card")){event.preventDefault();showProduct(event.target.dataset.id);}});
   });
-  productGrid.addEventListener("keydown", event => { if ((event.key==="Enter"||event.key===" ") && event.target.matches(".product-card")) { event.preventDefault(); if (state.stories.some(story => story.id === event.target.dataset.id)) showArticle(event.target.dataset.id); else showProduct(event.target.dataset.id); } });
   async function showProduct(id) {
     const product=state.products.find(p=>p.id===id); if(!product)return;
-    const image=product.image || "";
-    $("#detail-content").innerHTML=`<img class="detail-image" src="${escapeHtml(image)}" alt="${escapeHtml(product.title)}"><div class="detail-copy"><div class="detail-topline"><span>${escapeHtml(product.type)} · ${escapeHtml(product.category)}</span><span>By ${escapeHtml(product.creator)}</span></div><h2>${escapeHtml(product.title)}</h2><p>${escapeHtml(product.description || "A thoughtful addition to the collection.").replace(/\n/g,"<br><br>")}</p><div class="detail-bottom"><span class="detail-price">${money(product.price)}</span><button class="button button-dark detail-download" data-product="${escapeHtml(id)}">${product.id.startsWith("upload-")?"Download your file":"Explore this work"} <span>↗</span></button></div>${product.id.startsWith("upload-")?'<p class="detail-local-note">Your upload is stored only in this browser. Paid downloads and checkout are not enabled.</p>':''}</div>`;
+    const image=isSafeImageUrl(product.image)?product.image:"";
+    $("#detail-content").innerHTML=`${image?`<img class="detail-image" src="${escapeHtml(image)}" alt="${escapeHtml(product.title)}">`:""}<div class="detail-copy"><div class="detail-topline"><span>${escapeHtml(product.type)} · ${escapeHtml(product.category)}</span><span>By ${escapeHtml(product.creator)}</span></div><h2>${escapeHtml(product.title)}</h2><p>${escapeHtml(product.description || "A thoughtful addition to the collection.").replace(/\n/g,"<br><br>")}</p><div class="detail-bottom"><span class="detail-price">${money(product.price)}</span><button class="button button-dark detail-download" data-product="${escapeHtml(id)}">${product.filePath?"Download file":"Explore this work"} <span>↗</span></button></div>${product.filePath?'<p class="detail-local-note">This published file is publicly downloadable. Secure checkout and purchase entitlements are not configured.</p>':''}</div>`;
     $("#detail-content").querySelector(".detail-download").addEventListener("click", async () => {
-      if (!product.id.startsWith("upload-")) { toast("Purchases are not enabled. Connect a secure payment provider to sell this item.", true); return; }
-      try { const file=await getFile(id); if (!file) throw new Error("The original file is no longer available in this browser."); const url=URL.createObjectURL(file), link=document.createElement("a"); link.href=url; link.download=product.fileName || "alibaba-collection-download"; link.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); toast("Your file download has started."); }
-      catch(error) { toast(error.message || "Could not download this file.", true); }
+      if (!product.filePath) { toast("Purchases are not enabled for this sample listing.", true); return; }
+      const link=document.createElement("a"); link.href=product.image && product.type==="Images"?product.image:`${supabaseConfig.url.replace(/\/$/,"")}/storage/v1/object/public/${storageBucket}/${product.filePath.split("/").map(encodeURIComponent).join("/")}`; link.download=product.fileName || "alibaba-collection-download"; link.rel="noopener"; link.click();
+      toast("Your file download has started.");
     });
     $("#detail-dialog").showModal();
   }
-  $("#search-input").addEventListener("input", event => { state.query=event.target.value; renderProducts(); });
-  $(".search-form").addEventListener("submit", event => { event.preventDefault(); state.query=$("#search-input").value; state.filter=$("#search-type").value==="Articles"?"Articles":$("#search-type").value; renderProducts(); $("#collection").scrollIntoView({behavior:"smooth"}); });
-  $$(".popular-searches button").forEach(button=>button.addEventListener("click",()=>{$("#search-input").value=button.dataset.query;state.query=button.dataset.query;setFilter("All");}));
-  $$(".filter-tab,.category-pill").forEach(button=>button.addEventListener("click",()=>setFilter(button.dataset.filter)));
-  $("#sort-select").addEventListener("change",renderProducts);
-  $("#favorites-toggle").addEventListener("click",event=>{state.onlyFavorites=!state.onlyFavorites;event.currentTarget.classList.toggle("is-active",state.onlyFavorites);renderProducts();});
-  $("#clear-filters").addEventListener("click",()=>{$("#search-input").value="";state.query="";setFilter("All");});
-  $("#load-more").addEventListener("click",()=>{$("#stories").scrollIntoView({behavior:"smooth"});});
+  $("#search-input").addEventListener("input", event => { state.query=event.target.value; renderProducts();renderStories(); });
+  $(".search-form").addEventListener("submit", event => {
+    event.preventDefault();
+    state.query=$("#search-input").value.trim();
+    const destination=$("#search-type").value==="Articles"?"stories":$("#search-type").value.toLowerCase();
+    location.hash=`#${destination}`;
+  });
+  $$(".popular-searches button").forEach(button=>button.addEventListener("click",()=>{
+    $("#search-input").value=button.dataset.query;state.query=button.dataset.query;renderProducts();renderStories();location.hash="#images";
+  }));
+  $$(".sort-select").forEach(select=>select.addEventListener("change",renderProducts));
+  $$("[data-favorites]").forEach(button=>button.addEventListener("click",()=>{
+    state.favoritesView=state.favoritesView===button.dataset.favorites?"":button.dataset.favorites;
+    button.classList.toggle("is-active",state.favoritesView===button.dataset.favorites);
+    renderProducts();
+  }));
+  $$(".clear-search").forEach(button=>button.addEventListener("click",()=>{
+    $("#search-input").value="";state.query="";renderProducts();renderStories();
+  }));
   function showArticle(id) {
     const story=state.stories.find(item=>item.id===id); if(!story)return;
-    $("#detail-content").innerHTML=`${story.image?`<img class="detail-image" src="${escapeHtml(story.image)}" alt="">`:""}<div class="detail-copy"><div class="detail-topline"><span>${escapeHtml(story.category || "COMMUNITY NOTES")}</span><span>By ${escapeHtml(story.creator || "You")}</span></div><h2>${escapeHtml(story.title)}</h2><p>${escapeHtml(story.body).replace(/\n/g,"<br><br>")}</p></div>`;
+    const storyImage=isSafeImageUrl(story.image)?`<img class="detail-image" src="${escapeHtml(story.image)}" alt="">`:"";
+    $("#detail-content").innerHTML=`${storyImage}<div class="detail-copy"><div class="detail-topline"><span>${escapeHtml(story.category || "COMMUNITY NOTES")}</span><span>By ${escapeHtml(story.creator || "You")}</span></div><h2>${escapeHtml(story.title)}</h2><p>${escapeHtml(story.body).replace(/\n/g,"<br><br>")}</p></div>`;
     $("#detail-dialog").showModal();
   }
   storyGrid.addEventListener("click",event=>{const card=event.target.closest("[data-story]");if(card)showArticle(card.dataset.story);});
   storyGrid.addEventListener("keydown",event=>{const card=event.target.closest("[data-story]");if(card&&(event.key==="Enter"||event.key===" ")){event.preventDefault();showArticle(card.dataset.story);}});
-  $("#view-stories").addEventListener("click",()=>{$("#stories").scrollIntoView({behavior:"smooth"});});
   function showArticleWritingPage() {
-    const writing = location.hash === "#write-story-page";
-    $("#storefront-view").classList.toggle("hidden", writing);
+    const route=location.hash.slice(1);
+    const writing=route==="write-story-page";
+    if (writing && !isAdmin()) {
+      toast("Log in as admin to write or publish stories.", true);
+      location.hash = "#stories";
+      return;
+    }
+    const page=route==="images"?"images":route==="documents"?"documents":route==="stories"?"stories":"home";
+    $("#storefront-view").classList.toggle("hidden",writing||page!=="home");
+    $("#images-page").classList.toggle("hidden",writing||page!=="images");
+    $("#documents-page").classList.toggle("hidden",writing||page!=="documents");
+    $("#stories-page").classList.toggle("hidden",writing||page!=="stories");
     $("#write-story-page").classList.toggle("hidden", !writing);
     $(".footer").classList.toggle("hidden", writing);
-    $$(".nav-link").forEach(link => link.classList.toggle("active", writing
-      ? link.dataset.view === "write-story"
-      : link.dataset.view === "discover" && location.hash !== "#stories"));
-    if (writing) window.scrollTo(0, 0);
+    $$(".nav-link").forEach(link => link.classList.toggle("active",!writing&&link.dataset.view===page));
+    if (writing||page!=="home") window.scrollTo(0,0);
   }
   function navigateToArticleWritingPage() {
+    if (!requireAdmin()) return;
     if (location.hash === "#write-story-page") showArticleWritingPage();
     else location.hash = "#write-story-page";
   }
@@ -178,34 +424,40 @@
   });
   $("#article-form").addEventListener("submit",async event=>{
     event.preventDefault();
+    if (!requireAdmin()) return;
     const form=event.currentTarget,submit=form.querySelector('[type="submit"]'),error=$("#article-error"),cover=form.elements.cover.files[0];
-    const story={id:`story-${Date.now()}`,title:form.elements.title.value.trim(),category:form.elements.category.value.trim()||"COMMUNITY NOTES",creator:"You",image:cover?"":"https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=700&q=80",body:form.elements.body.value.trim()};
-    const stories=safeRead("ac-stories",[]),coverId=cover?`story-cover-${story.id}`:"";
-    if(cover)story.coverId=coverId;
-    stories.push(story);submit.disabled=true;error.classList.add("hidden");
+    const storyId=crypto.randomUUID(),story={id:storyId,title:form.elements.title.value.trim(),category:form.elements.category.value.trim()||"COMMUNITY NOTES",creator:"Alibaba Collection Admin",image:"https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=700&q=80",body:form.elements.body.value.trim()};
+    submit.disabled=true;error.classList.add("hidden");
+    let coverPath="";
     try{
-      if(cover)await putFile(coverId,cover);
-      if(!save("ac-stories",stories)){
-        if(cover)await removeFile(coverId);
-        error.textContent="Your story could not be saved because browser storage is full. Remove some saved content and try again.";
-        error.classList.remove("hidden");return;
+      if(story.title.length<1||story.title.length>110)throw new Error("Story titles must be between 1 and 110 characters.");
+      if(story.body.length<30||story.body.length>50000)throw new Error("Story text must be between 30 and 50,000 characters.");
+      if(cover){
+        if(!/^image\/(jpeg|png|webp|gif)$/.test(cover.type)||cover.size>15*1024*1024)throw new Error("Choose a JPG, PNG, WebP, or GIF image no larger than 15 MB.");
+        const extension=cover.name.split(".").pop().toLowerCase(),safeName=`cover.${extension}`;
+        coverPath=`${state.adminSession.user.id}/${storyId}/${safeName}`;
+        story.image=await uploadObject(coverPath,cover);
       }
-      if(cover)story.image=state.storyCoverUrl;
-      state.stories.push(story);renderStories();renderProducts();form.reset();
+      const inserted=await supabaseRequest("/rest/v1/stories",{method:"POST",token:await currentAdminToken(),headers:{Prefer:"return=representation"},body:{id:storyId,title:story.title,category:story.category,creator:story.creator,image_url:story.image,body:story.body}});
+      if(!Array.isArray(inserted)||inserted.length!==1)throw new Error("Supabase did not confirm the story publication.");
+      state.stories.unshift(story);renderStories();renderProducts();form.reset();
       $("#story-cover-preview").removeAttribute("src");$("#story-cover-preview").classList.add("hidden");state.storyCoverUrl="";
-      toast("Your story has been published in the community journal.");
+      toast("Your story is now published in the shared journal.");
       location.hash="#stories";
-      setTimeout(()=>$("#stories").scrollIntoView({behavior:"smooth"}),0);
     }catch(cause){
+      if(coverPath){
+        try{await deleteObject(coverPath);}
+        catch(cleanupError){cause.message=`${cause.message} The uploaded cover also needs cleanup: ${cleanupError.message}`;}
+      }
       error.textContent=cause.message||"Could not publish your story. Check available browser storage and try again.";
       error.classList.remove("hidden");
     }finally{submit.disabled=false;}
   });
   function showAccount() {
-    const uploads=state.products.filter(product=>product.id.startsWith("upload-"));
+    const uploads=state.products.filter(product=>product.isAdminUpload);
     const saved=state.favorites.map(id=>state.products.find(item=>item.id===id)||state.stories.find(item=>item.id===id)).filter(Boolean);
     const itemRow=item=>`<div class="account-item"><span>${escapeHtml(item.title)}${item.price===undefined?"":` · ${money(item.price)}`}</span><button data-open-product="${escapeHtml(item.id)}">View ↗</button></div>`;
-    $("#account-content").innerHTML=uploads.length||saved.length?`${uploads.length?`<h3 style="font-size:12px;margin:18px 0 8px">Your uploads (${uploads.length})</h3>${uploads.map(itemRow).join("")}`:""}<h3 style="font-size:12px;margin:22px 0 8px">Saved (${saved.length})</h3>${saved.length?saved.map(itemRow).join(""):'<p class="modal-intro">Your saved items will appear here.</p>'}`:'<div class="empty-state"><div class="empty-icon">✳</div><h3>A fresh start.</h3><p>Save work you love or add something of your own to see it here.</p></div>';
+    $("#account-content").innerHTML=uploads.length||saved.length?`${uploads.length?`<h3 class="account-section-title">Published by admin (${uploads.length})</h3>${uploads.map(itemRow).join("")}`:""}<h3 class="account-section-title">Saved (${saved.length})</h3>${saved.length?saved.map(itemRow).join(""):'<p class="modal-intro">Your saved items will appear here.</p>'}`:'<div class="empty-state"><div class="empty-icon">✳</div><h3>A fresh start.</h3><p>Save work you love or explore the public collection to find something you like.</p></div>';
     $("#account-content").querySelectorAll("[data-open-product]").forEach(button=>button.addEventListener("click",()=>{ $("#account-dialog").close();const id=button.dataset.openProduct;if(state.stories.some(story=>story.id===id))showArticle(id);else showProduct(id);}));
     $("#account-dialog").showModal();
   }
@@ -213,34 +465,16 @@
   $(".theme-toggle").addEventListener("click",()=>{document.body.classList.toggle("dark");save("ac-dark",document.body.classList.contains("dark"));});
   if(safeRead("ac-dark",false))document.body.classList.add("dark");
   $(".mobile-menu").addEventListener("click",()=>$(".main-nav").classList.toggle("menu-open"));
-  $$(".nav-link").forEach(link=>link.addEventListener("click",event=>{
+  $$("[data-view='creators']").forEach(link=>link.addEventListener("click",event=>{
+    event.preventDefault();
+    if(location.hash!=="#discover")location.hash="#discover";
+    setTimeout(()=>$("#creators").scrollIntoView({behavior:"smooth"}),0);
+  }));
+  $$(".nav-link").forEach(link=>link.addEventListener("click",()=>{
     $(".main-nav").classList.remove("menu-open");
-    if(link.dataset.category){event.preventDefault();setFilter(link.dataset.category);$("#collection").scrollIntoView({behavior:"smooth"});}
-    else if(link.dataset.view==="write-story"){event.preventDefault();navigateToArticleWritingPage();}
-    else if(link.dataset.view==="creators"){event.preventDefault();$("#creators").scrollIntoView({behavior:"smooth"});}
-    $$(".nav-link").forEach(item=>item.classList.toggle("active",item===link));
   }));
   window.addEventListener("hashchange",showArticleWritingPage);
-  async function restoreUploadedPreviews() {
-    const uploads = state.products.filter(product => product.id.startsWith("upload-"));
-    for (const product of uploads) {
-      try {
-        const file = await getFile(product.id);
-        if (file && file.type.startsWith("image/")) product.image = URL.createObjectURL(file);
-      } catch (error) { toast(error.message || "Could not restore a saved upload preview.", true); }
-    }
-    for(const story of state.stories){
-      if(!story.coverId)continue;
-      try{
-        const file=await getFile(story.coverId);
-        if(file)story.image=URL.createObjectURL(file);
-      }catch(error){toast(error.message||"Could not restore a saved story cover.",true);}
-    }
-    const productsById = new Map(uploads.map(product => [product.id, product]));
-    for (const story of state.stories) {
-      if (story.productId && productsById.has(story.productId)) story.image = productsById.get(story.productId).image;
-    }
-    renderProducts(); renderStories();
-  }
-  renderProducts();renderStories();showArticleWritingPage();restoreUploadedPreviews();
+  try { localStorage.removeItem("ac-admin-credential"); }
+  catch (error) { toast(`Could not remove the old local admin credential: ${error.message}`, true); }
+  updateAdminControls();renderProducts();renderStories();showArticleWritingPage();loadMarketplaceContent();
 })();
