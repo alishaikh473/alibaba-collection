@@ -17,7 +17,7 @@ The project URL and publishable key are intentionally placeholders until a Supab
    ```
 
    Confirm that this inserts exactly one row. Only an account in this table passes `public.is_admin()` and the RLS write policies. Do not expose any UI that lets users add themselves to this table.
-4. In GitHub **Settings → Secrets and variables → Actions → Variables**, add `SUPABASE_URL` (the exact `https://<project-ref>.supabase.co` project URL) and `SUPABASE_PUBLISHABLE_KEY` (the `sb_publishable_...` key, or legacy anon JWT). These are public configuration, not secrets: the built browser files and network requests will expose them. Never add a Supabase secret/service-role key or database password as a deployment variable, repository file, or browser value.
+4. In GitHub **Settings → Secrets and variables → Actions → Secrets**, add `SUPABASE_URL` (the exact `https://<project-ref>.supabase.co` project URL) and `SUPABASE_PUBLISHABLE_KEY` (the `sb_publishable_...` key, or legacy anon JWT). The workflow reads these repository secrets during the build, but the publishable key and project URL are embedded in the public site and visible in browser requests. Never use a Supabase secret/service-role key or database password here or in browser code.
 5. Deploy the static files over HTTPS using the workflow below. If the final site URL differs from the URL entered in Supabase Auth, update its **Site URL** and allowed redirects before signing in.
 6. Verify both sides: anonymous visitors can read products/stories but cannot insert, update, delete, or upload; the allowlisted admin can publish; and a separate non-admin account is still denied.
 
@@ -25,7 +25,7 @@ The existing schema gives visitors read access to published product and story ro
 
 ### Deploy with GitHub Pages
 
-The workflow at [`.github/workflows/deploy-pages.yml`](./.github/workflows/deploy-pages.yml) builds and deploys the site on each push to `main`. It rejects placeholder, malformed, or elevated Supabase keys, places the public configuration only in the generated artifact, and restricts the production CSP to the exact Supabase origin. The original checked-in configuration remains placeholders.
+The workflow at [`.github/workflows/deploy-pages.yml`](./.github/workflows/deploy-pages.yml) builds and deploys the site on each push to `main`. It reads `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` from repository Actions secrets, rejects placeholder, malformed, or elevated Supabase keys, places the public configuration only in the generated artifact, and restricts the production CSP to the exact Supabase origin. The original checked-in configuration remains placeholders.
 
 1. Create a GitHub repository for this site and place the contents of this `alibabacollection` folder at the repository root (the root must contain `.github`, `index.html`, and `scripts`). From that folder, initialize and push the repository, replacing the placeholders with your GitHub owner and repository name:
 
