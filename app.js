@@ -89,7 +89,9 @@
     try { payload = responseText ? JSON.parse(responseText) : null; } catch { payload = responseText; }
     if (!response.ok) {
       const detail = payload && typeof payload === "object" ? payload.msg || payload.message || payload.error_description || payload.error : "";
-      throw new Error(detail || `Supabase request failed (${response.status}).`);
+      const error = new Error(detail || `Supabase request failed (${response.status}).`);
+      error.code = payload && typeof payload === "object" ? payload.code : "";
+      throw error;
     }
     return payload;
   }
@@ -144,7 +146,12 @@
       setBackendStatus("");
     } catch (error) {
       console.warn("Could not load shared marketplace content; keeping sample content available.", error);
-      setBackendStatus("Supabase is temporarily unavailable — showing sample content. Check your connection or Supabase project configuration.");
+      if (error && typeof error === "object" && error.code === "PGRST205") {
+        setBackendStatus("Supabase is connected, but its catalog tables are missing. Run supabase-schema.sql in the Supabase SQL Editor, then reload.");
+        return;
+      }
+      const detail = error instanceof Error ? error.message : String(error);
+      setBackendStatus(`Could not load shared marketplace content: ${detail}`);
     }
   }
   const adminDialog = $("#admin-dialog");
