@@ -81,7 +81,7 @@
     requireSupabase();
     const headers = new Headers(options.headers || {});
     headers.set("apikey", supabaseApiKey);
-    if (options.token) headers.set("Authorization", `Bearer ${options.token}`);
+    headers.set("Authorization", `Bearer ${options.token || supabaseApiKey}`);
     if (options.body !== undefined && !(options.body instanceof Blob)) headers.set("Content-Type", "application/json");
     const response = await fetch(`${supabaseConfig.url.replace(/\/$/, "")}${path}`, {method:options.method || "GET", headers, body:options.body instanceof Blob ? options.body : options.body === undefined ? undefined : JSON.stringify(options.body)});
     const responseText = await response.text();
