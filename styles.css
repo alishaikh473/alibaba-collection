@@ -164,4 +164,4 @@ button:focus-visible,a:focus-visible,[tabindex="0"]:focus-visible,input:focus-vi
 .account-modal #admin-form .form-actions{margin-top:2px}
 .backend-status{padding:10px 6%;border-bottom:1px solid #d8c397;background:#f4f0e4;color:#4b513f;text-align:center;font-size:12px}
 body.dark .backend-status{background:#30352e;border-bottom-color:#756747;color:#e3ddcc}
-@media(max-width:650px){.top-actions>.admin-change:not(.hidden){display:inline-flex;align-items:center;padding:8px 7px;font-size:0}.top-actions>.admin-change:not(.hidden)::after{content:"Password";font-size:9px;white-space:nowrap}}
+@media(max-width:650px){.top-actions>.admin-change:not(.hidden){display:inline-flex;align-items:center;padding:8px 7px;font-size:0}.top-actions>.admin-change:not(.hidden)::after{content:"Password";font-size:9px;white-space:nowrap}.top-actions>.admin-write:not(.hidden){display:inline-flex;align-items:center;padding:8px 7px;font-size:0}.top-actions>.admin-write:not(.hidden)::after{content:"Story";font-size:9px;white-space:nowrap}}

@@ -69,7 +69,7 @@
   }
   function updateAdminControls() {
     const authorized = isAdmin();
-    $$(".open-upload, #write-story").forEach(control => control.classList.toggle("hidden", !authorized));
+    $$(".open-upload, .admin-write").forEach(control => control.classList.toggle("hidden", !authorized));
     $(".admin-login").classList.toggle("hidden", authorized);
     $(".admin-change").classList.toggle("hidden", !authorized);
     $(".admin-logout").classList.toggle("hidden", !authorized);
@@ -415,7 +415,7 @@
     if (location.hash === "#write-story-page") showArticleWritingPage();
     else location.hash = "#write-story-page";
   }
-  $("#write-story").addEventListener("click",navigateToArticleWritingPage);
+  $$(".admin-write").forEach(button => button.addEventListener("click",navigateToArticleWritingPage));
   $("#story-cover-input").addEventListener("change",event=>{
     const file=event.target.files[0], preview=$("#story-cover-preview");
     if(state.storyCoverUrl)URL.revokeObjectURL(state.storyCoverUrl);
