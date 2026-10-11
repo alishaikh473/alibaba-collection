@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://alishaikh473.github.io/alibaba-collection/sitemap.xml

@@ -66,7 +66,7 @@ if (Test-Path -LiteralPath $output) {
 }
 New-Item -Path $output -ItemType Directory | Out-Null
 
-foreach ($filename in @("index.html", "app.js", "styles.css")) {
+foreach ($filename in @("index.html", "app.js", "styles.css", "robots.txt", "sitemap.xml")) {
   Copy-Item -LiteralPath (Join-Path $root $filename) -Destination $output
 }
 $images = Join-Path $root "images"

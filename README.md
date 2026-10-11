@@ -27,6 +27,8 @@ The existing schema gives visitors read access to published product and story ro
 
 The workflow at [`.github/workflows/deploy-pages.yml`](./.github/workflows/deploy-pages.yml) builds and deploys the site on each push to `main`. It reads `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` from repository Actions secrets, rejects placeholder, malformed, or elevated Supabase keys, places the public configuration only in the generated artifact, and restricts the production CSP to the exact Supabase origin. The original checked-in configuration remains placeholders.
 
+The deployed homepage includes a canonical URL and meta description. `robots.txt` permits crawler access and references `sitemap.xml`, which lists the homepage. The site uses hash-based navigation, so its section links are not separate crawlable URLs.
+
 1. Create a GitHub repository for this site and place the contents of this `alibabacollection` folder at the repository root (the root must contain `.github`, `index.html`, and `scripts`). From that folder, initialize and push the repository, replacing the placeholders with your GitHub owner and repository name:
 
    ```powershell

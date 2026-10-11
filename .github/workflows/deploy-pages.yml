@@ -13,6 +13,8 @@ on:
       - "index.html"
       - "app.js"
       - "styles.css"
+      - "robots.txt"
+      - "sitemap.xml"
       - "supabase-config.js"
       - "images/**"
   workflow_dispatch:
