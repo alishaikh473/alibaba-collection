@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f0e8">
+  <meta name="application-name" content="DiscoveryImage">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://*.supabase.co http://127.0.0.1:54321; img-src 'self'; font-src 'self'">
+  <title>Payment confirmed — DiscoveryImage</title>
+  <link rel="stylesheet" href="styles.css?v=stripe">
+  <script src="supabase-config.js" defer></script>
+  <script src="success.js?v=stripe" defer></script>
+</head>
+<body class="payment-result-page">
+  <main class="payment-result">
+    <a class="brand" href="index.html" aria-label="DiscoveryImage home"><span class="brand-mark" aria-hidden="true"><img src="favicon.svg" alt=""></span><span class="brand-name" aria-hidden="true"><span class="brand-primary">DiscoveryImage</span></span></a>
+    <div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> SECURE CHECKOUT</div>
+    <h1>Your payment is <span class="serif">confirmed.</span></h1>
+    <p id="payment-status" class="section-description" role="status" aria-live="polite">Verifying your payment and preparing your secure downloads…</p>
+    <div id="payment-error" class="form-error hidden" role="alert"></div>
+    <div id="download-list" class="paid-download-list"></div>
+    <a class="button button-dark payment-return" href="index.html#images">Continue exploring the collection</a>
+  </main>
+</body>
+</html>

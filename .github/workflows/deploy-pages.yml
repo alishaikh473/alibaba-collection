@@ -13,6 +13,20 @@ on:
       - "index.html"
       - "app.js"
       - "styles.css"
+      - "articles.css"
+      - "legal.css"
+      - "favicon.svg"
+      - "success.html"
+      - "success.js"
+      - "cancel.html"
+      - "images.html"
+      - "documents.html"
+      - "about.html"
+      - "contact.html"
+      - "privacy.html"
+      - "terms.html"
+      - "refunds.html"
+      - "license.html"
       - "robots.txt"
       - "sitemap.xml"
       - "supabase-config.js"
@@ -29,6 +43,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

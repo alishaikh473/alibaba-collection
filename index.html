@@ -5,36 +5,52 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f3f0e8">
-  <meta name="description" content="Discover beautiful images, useful digital resources and thoughtful stories from independent creators.">
+  <meta name="application-name" content="DiscoveryImage">
+  <meta name="description" content="Discover beautiful images and useful digital resources from independent creators on DiscoveryImage.">
+  <meta property="og:site_name" content="DiscoveryImage">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://alishaikh473.github.io/alibaba-collection/">
+  <meta property="og:title" content="DiscoveryImage — Good work, gathered.">
+  <meta property="og:description" content="Discover beautiful images and useful digital resources from independent creators.">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="DiscoveryImage — Good work, gathered.">
+  <meta name="twitter:description" content="Discover beautiful images and useful digital resources from independent creators.">
   <link rel="canonical" href="https://alishaikh473.github.io/alibaba-collection/">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; img-src 'self' blob: http://127.0.0.1:54321 https://images.unsplash.com https://*.supabase.co; connect-src 'self' http://127.0.0.1:54321 https://*.supabase.co; font-src 'self' https://fonts.gstatic.com">
-  <title>Alibaba Collection — Good work, gathered.</title>
+  <title>DiscoveryImage — Good work, gathered.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=articles">
+  <link rel="stylesheet" href="articles.css">
   <script src="supabase-config.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=articles" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#discover" aria-label="Alibaba Collection home" data-brand-logo>Alibaba Collection</a>
+    <a class="brand" href="#discover" aria-label="DiscoveryImage home" data-brand-logo>DiscoveryImage</a>
     <nav class="main-nav" aria-label="Main navigation">
       <a class="nav-link active" href="#discover" data-view="discover">Discover</a>
       <a class="nav-link" href="#images" data-view="images">Images</a>
       <a class="nav-link" href="#documents" data-view="documents">Documents</a>
-      <a class="nav-link" href="#stories" data-view="stories">Stories</a>
+      <a class="nav-link" href="#articles" data-view="articles">Articles</a>
       <a class="nav-link" href="#creators" data-view="creators">Creators</a>
     </nav>
     <div class="top-actions">
       <button class="icon-button theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode"><span>◐</span></button>
       <button class="button button-quiet sign-in">My corner</button>
       <button class="button button-quiet admin-login">Admin login</button>
+      <button class="button button-quiet admin-revenue hidden" type="button">Sales</button>
       <button class="button button-quiet admin-change hidden" type="button" aria-label="Change admin password" title="Change admin password">Change password</button>
       <button class="button button-quiet admin-logout hidden">Admin · Log out</button>
-      <button class="button button-quiet admin-write hidden" id="admin-write-story" type="button">Write a story</button>
       <button class="button button-dark open-upload hidden"><span class="plus">＋</span> Start selling</button>
+      <a class="button button-dark admin-write hidden" href="#article-editor">Write article</a>
+      <button class="icon-button cart-toggle" type="button" aria-label="Shopping cart, 0 items" title="Shopping cart">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 10.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 1.9-1.4L22 8H6M10 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm8 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></svg>
+        <span class="cart-count" aria-live="polite">0</span>
+      </button>
       <button class="mobile-menu icon-button" aria-label="Open menu">☰</button>
     </div>
   </header>
@@ -46,12 +62,12 @@
       <div class="hero-content">
         <div class="eyebrow"><span class="eyebrow-dot"></span> A marketplace for good ideas</div>
         <h1>Good work,<br><span class="serif">gathered.</span></h1>
-        <p class="hero-copy">Discover beautiful images, useful resources and thoughtful stories — made and shared by independent creators.</p>
+        <p class="hero-copy">Discover beautiful images and useful digital resources — made and shared by independent creators.</p>
         <form class="search-form" role="search">
           <span class="search-icon" aria-hidden="true">⌕</span>
           <input id="search-input" type="search" placeholder="Try “editorial photography” or “brand kit”" aria-label="Search the marketplace">
           <select id="search-type" aria-label="Search category">
-            <option value="Images">Images</option><option value="Documents">Documents</option><option value="Articles">Stories</option>
+            <option value="Images">Images</option><option value="Documents">Documents</option>
           </select>
           <button class="search-submit" type="submit" aria-label="Search">→</button>
         </form>
@@ -67,69 +83,72 @@
 
     <section class="browse-strip" aria-label="Browse the collection">
       <span class="strip-label">EXPLORE THE COLLECTION</span>
-      <a class="category-pill selected" href="#images">Images <span>↗</span></a>
-      <a class="category-pill" href="#documents">Documents <span>↗</span></a>
-      <a class="category-pill" href="#stories">Stories &amp; articles <span>↗</span></a>
+      <a class="category-pill selected" href="images.html">Images <span>↗</span></a>
+      <a class="category-pill" href="documents.html">Documents <span>↗</span></a>
     </section>
 
     <section class="section category-directory" aria-labelledby="directory-title">
       <div class="section-heading">
-        <div><div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> FIND YOUR NEXT FAVORITE</div><h2 id="directory-title">Explore by <span class="serif">collection.</span></h2><p class="section-description">Three dedicated spaces for visual inspiration, useful resources, and thoughtful reads.</p></div>
+        <div><div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> FIND YOUR NEXT FAVORITE</div><h2 id="directory-title">Explore by <span class="serif">collection.</span></h2><p class="section-description">Two dedicated spaces for visual inspiration and useful resources.</p></div>
       </div>
       <div class="category-directory-grid">
-        <a class="category-directory-card image-directory-card" href="#images"><span class="directory-card-kicker">01 / IMAGE GALLERY</span><strong>Images worth<br><span class="serif">looking closer.</span></strong><span class="directory-card-link">Browse photography <b>↗</b></span></a>
-        <a class="category-directory-card document-directory-card" href="#documents"><span class="directory-card-kicker">02 / DOCUMENT LIBRARY</span><strong>Resources to<br><span class="serif">move you forward.</span></strong><span class="directory-card-link">Explore documents <b>↗</b></span></a>
-        <a class="category-directory-card story-directory-card" href="#stories"><span class="directory-card-kicker">03 / THE JOURNAL</span><strong>Stories that<br><span class="serif">stay with you.</span></strong><span class="directory-card-link">Read the journal <b>↗</b></span></a>
+        <a class="category-directory-card image-directory-card" href="images.html"><span class="directory-card-kicker">01 / IMAGE GALLERY</span><strong>Images worth<br><span class="serif">looking closer.</span></strong><span class="directory-card-link">Browse photography <b>↗</b></span></a>
+        <a class="category-directory-card document-directory-card" href="documents.html"><span class="directory-card-kicker">02 / DOCUMENT LIBRARY</span><strong>Resources to<br><span class="serif">move you forward.</span></strong><span class="directory-card-link">Explore documents <b>↗</b></span></a>
       </div>
     </section>
 
     <section class="creator-banner" id="creators">
-      <div class="creator-copy"><div class="eyebrow light-eyebrow"><span class="eyebrow-dot"></span> YOUR WORK BELONGS HERE</div><h2>Make good things.<br><span class="serif">Make them yours.</span></h2><p>Share the work you love and find your people. Upload an image, a helpful resource or your next great story.</p><button class="button button-cream open-upload hidden">Bring your work in <span>↗</span></button></div>
+      <div class="creator-copy"><div class="eyebrow light-eyebrow"><span class="eyebrow-dot"></span> YOUR WORK BELONGS HERE</div><h2>Make good things.<br><span class="serif">Make them yours.</span></h2><p>Share the work you love and find your people. Upload an image or a helpful digital resource.</p><button class="button button-cream open-upload hidden">Bring your work in <span>↗</span></button></div>
       <div class="creator-visual"><div class="creator-image"></div><div class="creator-caption">A community of makers<br>from everywhere.</div><div class="creator-circle">CREATE<br> &nbsp; &amp;<br> CONNECT</div></div>
     </section>
 
     </div>
     <section class="section catalog-page hidden" id="images-page" aria-labelledby="images-title">
       <div class="section-heading"><div><div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> IMAGE GALLERY</div><h1 id="images-title">Images made to <span class="serif">move you.</span></h1><p class="section-description">Discover photography and visual work from independent creators.</p></div><div class="section-tools"><button class="text-button" data-favorites="images">♡ <span>Saved</span></button><select class="sort-select" aria-label="Sort images"><option value="featured">Featured</option><option value="newest">Newest</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option></select></div></div>
-      <div class="catalog-subnav"><a class="catalog-subnav-active" href="#images">Images</a><a href="#documents">Documents</a><a href="#stories">Stories &amp; articles</a></div>
+      <div class="catalog-subnav"><a class="catalog-subnav-active" href="#images">Images</a><a href="#documents">Documents</a></div>
       <div class="product-grid" id="image-grid" aria-live="polite"></div>
       <div class="empty-state hidden" id="images-empty"><div class="empty-icon">⌕</div><h3>No images found.</h3><p>Try another search or explore the image gallery.</p><button class="button button-outline clear-search">Clear search</button></div>
     </section>
     <section class="section catalog-page hidden" id="documents-page" aria-labelledby="documents-title">
       <div class="section-heading"><div><div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> DOCUMENT LIBRARY</div><h1 id="documents-title">Good ideas,<br><span class="serif">ready to use.</span></h1><p class="section-description">Browse practical guides, templates, and digital documents.</p></div><div class="section-tools"><button class="text-button" data-favorites="documents">♡ <span>Saved</span></button><select class="sort-select" aria-label="Sort documents"><option value="featured">Featured</option><option value="newest">Newest</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option></select></div></div>
-      <div class="catalog-subnav"><a href="#images">Images</a><a class="catalog-subnav-active" href="#documents">Documents</a><a href="#stories">Stories &amp; articles</a></div>
+      <div class="catalog-subnav"><a href="#images">Images</a><a class="catalog-subnav-active" href="#documents">Documents</a></div>
       <div class="product-grid" id="document-grid" aria-live="polite"></div>
       <div class="empty-state hidden" id="documents-empty"><div class="empty-icon">⌕</div><h3>No documents found.</h3><p>Try another search or explore the document library.</p><button class="button button-outline clear-search">Clear search</button></div>
     </section>
-    <section class="section stories-section stories-page hidden" id="stories-page" aria-labelledby="stories-title">
-      <div class="section-heading"><div><div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> THE JOURNAL</div><h1 id="stories-title">Ideas worth <span class="serif">passing on.</span></h1><p class="section-description">Long-form stories, creative notes, and new perspectives from the community.</p></div><div class="story-actions"><button class="text-button admin-write hidden" id="write-story">Write a story <span>＋</span></button></div></div>
-      <div class="catalog-subnav"><a href="#images">Images</a><a href="#documents">Documents</a><a class="catalog-subnav-active" href="#stories">Stories &amp; articles</a></div>
-      <div class="story-grid" id="story-grid"></div>
+    <section class="section catalog-page article-page hidden" id="articles-page" aria-labelledby="articles-title">
+      <div class="section-heading"><div><div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> NOTES FROM THE COLLECTION</div><h1 id="articles-title">Stories worth <span class="serif">staying for.</span></h1><p class="section-description">Ideas, perspectives, and inspiration from DiscoveryImage.</p></div></div>
+      <div class="article-grid" id="article-grid" aria-live="polite"></div>
+      <div class="empty-state hidden" id="articles-empty"><div class="empty-icon">✳</div><h3>No articles published yet.</h3><p>Check back soon for something thoughtful to read.</p></div>
+      <div class="form-error hidden" id="articles-error" role="alert"></div>
     </section>
-    <section class="article-writing-page hidden" id="write-story-page" aria-labelledby="article-page-title">
-      <div class="article-page-heading">
-        <a class="text-button" href="#stories">← Back to the collection</a>
-        <div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> YOUR STORY, YOUR WORDS</div>
-        <h1 id="article-page-title">Write a little <span class="serif">something.</span></h1>
-        <p class="section-description">Take your time. Your story will appear in the community journal when you publish it.</p>
+    <section class="section article-detail-page hidden" id="article-detail-page" aria-labelledby="article-detail-title">
+      <a class="text-button article-back" href="#articles">← All articles</a>
+      <article id="article-detail"></article>
+    </section>
+    <section class="section article-editor-page hidden" id="article-editor-page" aria-labelledby="article-editor-heading">
+      <div class="section-heading"><div><div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> ADMIN · ARTICLE STUDIO</div><h1 id="article-editor-heading">Write something <span class="serif">good.</span></h1><p class="section-description">Draft in Markdown, preview your formatting, and publish when you’re ready.</p></div></div>
+      <div id="article-editor-locked" class="empty-state hidden"><h3>Admin access required.</h3><p>Sign in with an allowlisted admin account to create and manage articles.</p><button class="button button-dark article-admin-login" type="button">Admin login</button></div>
+      <div id="article-editor-panel" class="article-editor-layout hidden">
+        <form id="article-form" class="article-form">
+          <input type="hidden" name="id">
+          <label>Article title<input name="title" required maxlength="160" placeholder="A thoughtful title"></label>
+          <label>Article content <small>Markdown supported: headings, **bold**, *italic*, lists, quotes, and inline code.</small><textarea name="content" required minlength="1" maxlength="50000" rows="18" placeholder="# Begin with a heading&#10;&#10;Write your article here..."></textarea></label>
+          <label class="rights-check"><input type="checkbox" name="is_published"><span>Publish this article (visible to everyone)</span></label>
+          <div class="form-error hidden" id="article-form-error" role="alert"></div>
+          <div class="form-actions"><button class="button button-quiet article-new" type="button">New article</button><button class="button button-dark" id="article-save" type="submit">Save draft</button></div>
+        </form>
+        <aside class="article-preview" aria-label="Article preview"><p class="eyebrow section-eyebrow">LIVE PREVIEW</p><div id="article-preview-content" class="article-body"></div></aside>
+        <div class="article-admin-list"><h2>Your articles</h2><div id="article-admin-list"></div></div>
       </div>
-      <form id="article-form" class="article-editor-form">
-        <label>Story title<input name="title" required maxlength="110" placeholder="What have you been thinking about?"></label>
-        <label class="article-category-field">Category <span class="optional-label">Optional · Add multiple topics if helpful</span><input name="category" type="text" maxlength="120" placeholder="Wildlife, Desert Exploration, Nature &amp; Inspiration" aria-describedby="story-category-help"><small id="story-category-help">Up to 120 characters. Scroll within the field to review longer categories.</small></label>
-        <label class="article-cover-field">Cover image <span class="optional-label">Optional · JPG, PNG, WebP, or GIF · Up to 15 MB</span><input id="story-cover-input" name="cover" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><img id="story-cover-preview" class="story-cover-preview hidden" alt="Selected story cover preview"></label>
-        <label class="article-body-field">Your story<textarea name="body" required minlength="30" maxlength="50000" rows="18" placeholder="Start anywhere. You can always polish it later."></textarea><small>Long-form text is supported. Use blank lines to start a new paragraph.</small></label>
-        <div id="article-error" class="form-error hidden" role="alert"></div>
-        <div class="article-editor-actions"><button class="button button-dark" type="submit">Publish story <span>↗</span></button></div>
-      </form>
     </section>
   </main>
-  <footer class="footer"><a class="brand footer-brand" href="#discover" aria-label="Alibaba Collection home" data-brand-logo>Alibaba Collection</a><span>A more thoughtful place to find your next favorite thing.</span><span>© 2026 Alibaba Collection</span></footer>
+  <footer class="footer"><a class="brand footer-brand" href="#discover" aria-label="DiscoveryImage home" data-brand-logo>DiscoveryImage</a><span>A more thoughtful place to find your next favorite thing.</span><nav class="legal-links" aria-label="Business information"><a href="about.html">About</a><a href="contact.html">Contact</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="refunds.html">Refunds</a><a href="license.html">License</a></nav><span>© 2026 DiscoveryImage</span></footer>
 
   <dialog id="upload-dialog" class="modal">
     <form method="dialog" class="modal-close-form"><button class="modal-close" aria-label="Close">×</button></form>
     <div class="modal-content">
       <div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> SHARE YOUR WORK</div><h2>Bring something <span class="serif">good.</span></h2>
-      <p class="modal-intro">Upload a file to secure shared storage. Published listings are publicly downloadable; checkout is not enabled.</p>
+      <p class="modal-intro">Free files are public. Paid files are stored privately and delivered only after Stripe confirms payment.</p>
       <label class="upload-drop" id="upload-drop" for="file-input"><span class="upload-symbol">↑</span><strong>Drop a file here, or browse</strong><span>Images, PDFs, and documents · Up to 15 MB</span><input id="file-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/tiff,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.epub,.tif,.tiff"></label>
       <div id="upload-progress" class="upload-progress hidden"><span></span></div>
       <form id="product-form" class="upload-fields hidden">
@@ -145,6 +164,18 @@
   </dialog>
 
   <dialog id="detail-dialog" class="modal detail-modal"><form method="dialog" class="modal-close-form"><button class="modal-close" aria-label="Close">×</button></form><div id="detail-content" class="detail-content"></div></dialog>
+  <dialog id="cart-dialog" class="modal cart-modal" aria-labelledby="cart-title">
+    <form method="dialog" class="modal-close-form"><button class="modal-close" aria-label="Close shopping cart">×</button></form>
+    <div class="modal-content">
+      <div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> YOUR COLLECTION</div>
+      <h2 id="cart-title">Shopping cart</h2>
+      <p class="modal-intro">Review the images and documents you have added.</p>
+      <p class="cart-notice" role="status">Payments are processed securely by Stripe. Only paid listings in private storage can be checked out.</p>
+      <div id="cart-items" class="cart-items"></div>
+      <div class="cart-total"><span>Total</span><strong id="cart-total">$0.00</strong></div>
+      <div class="cart-footer"><button class="button button-quiet cart-continue" type="button">Continue browsing</button><button class="button button-dark cart-checkout" type="button">Secure checkout</button></div>
+    </div>
+  </dialog>
   <dialog id="admin-dialog" class="modal account-modal">
     <form method="dialog" class="modal-close-form"><button class="modal-close" aria-label="Close">×</button></form>
     <div class="modal-content">
@@ -160,6 +191,24 @@
         <div class="form-actions"><button class="button button-dark" type="submit" id="admin-submit">Log in</button></div>
       </form>
       <p class="modal-intro">Authentication is handled by Supabase. Only accounts explicitly added to this site's admin allowlist can publish. Session tokens are kept in memory for this tab.</p>
+    </div>
+  </dialog>
+  <dialog id="revenue-dialog" class="modal revenue-modal" aria-labelledby="revenue-title">
+    <form method="dialog" class="modal-close-form"><button class="modal-close" aria-label="Close sales dashboard">×</button></form>
+    <div class="modal-content">
+      <div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> VERIFIED STRIPE ORDERS</div>
+      <h2 id="revenue-title">Sales dashboard</h2>
+      <p class="modal-intro" id="revenue-status" role="status">Sales totals include verified payments and recorded refunds only.</p>
+      <div class="revenue-summary-grid">
+        <div><span>Successful orders</span><strong id="revenue-orders">—</strong></div>
+        <div><span>Gross verified sales</span><strong id="revenue-gross">—</strong></div>
+        <div><span>Refunds</span><strong id="revenue-refunds">—</strong></div>
+        <div><span>Net revenue</span><strong id="revenue-net">—</strong></div>
+        <div><span>Failed payments</span><strong id="revenue-failures">—</strong></div>
+      </div>
+      <div id="revenue-error" class="form-error hidden" role="alert"></div>
+      <section><h3 class="revenue-section-title">Best sellers</h3><div id="revenue-best-sellers"></div></section>
+      <section><h3 class="revenue-section-title">Recent transactions</h3><div id="revenue-recent-orders"></div></section>
     </div>
   </dialog>
   <dialog id="account-dialog" class="modal account-modal"><form method="dialog" class="modal-close-form"><button class="modal-close" aria-label="Close">×</button></form><div class="modal-content"><div class="eyebrow section-eyebrow"><span class="eyebrow-dot"></span> YOUR COLLECTION</div><h2>Your little <span class="serif">corner.</span></h2><p class="modal-intro">Your saved items are stored in this browser. Published content is shared through the collection.</p><div id="account-content"></div></div></dialog>
